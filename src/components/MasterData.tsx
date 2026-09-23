@@ -70,6 +70,20 @@ const mapHeaderKey = (h: string): string => {
   if (norm === 'nama_vendor' || norm === 'namavendor' || norm === 'vendor_name' || norm === 'nama_bengkel' || norm === 'vendor' || norm === 'nama') return 'nama_vendor';
   if (norm === 'maint_plant' || norm === 'plant' || norm === 'branch_plant' || norm === 'kode_cabang') return 'maint_plant';
   if (norm === 'cabang' || norm === 'branch_name' || norm === 'nama_cabang') return 'cabang';
+  
+  // Service Categories Aliases
+  if (norm === 'kategori_layanan' || norm === 'kategorilayanan' || norm === 'layanan_kategori' || norm === 'kategori') return 'kategori_layanan';
+  if (norm === 'jenis_layanan' || norm === 'jenislayanan' || norm === 'jenis' || norm === 'layanan' || norm === 'service' || norm === 'service_type') return 'jenis_layanan';
+  if (norm === 'role_pic' || norm === 'rolepic' || norm === 'role' || norm === 'pic' || norm === 'pic_role' || norm === 'role_pic_layanan') return 'role_pic';
+  
+  // Operation Users Aliases
+  if (norm === 'nama' || norm === 'name' || norm === 'nama_lengkap' || norm === 'fullname' || norm === 'full_name') return 'nama';
+  if (norm === 'username' || norm === 'user' || norm === 'nama_pengguna') return 'username';
+  if (norm === 'password' || norm === 'pass' || norm === 'sandi' || norm === 'kata_sandi') return 'password';
+  if (norm === 'role_operation' || norm === 'role' || norm === 'roleoperation' || norm === 'hak_akses') return 'role_operation';
+  if (norm === 'cabang_handling' || norm === 'cabang' || norm === 'cabanghandling' || norm === 'branch' || norm === 'branch_handling' || norm === 'lokasi') return 'cabang_handling';
+  if (norm === 'status' || norm === 'aktif' || norm === 'state' || norm === 'user_status') return 'status';
+  
   return norm;
 };
 
@@ -721,6 +735,18 @@ export const MasterData: React.FC = () => {
           const eq = d.no_equipment || d.license_plate || `EQ-${index + 100}`;
           const plate = d.license_plate || d.no_equipment || 'B 0000 XX';
           const defaultCmd = customers.length > 0 ? customers[0].cmd : '3000170';
+          let resolvedCmd = d.cmd || '';
+          if (!resolvedCmd && d.customer_name) {
+            const matchedCust = customers.find(c => 
+              c.nama_customer.toLowerCase().trim().includes(d.customer_name.toLowerCase().trim()) ||
+              d.customer_name.toLowerCase().trim().includes(c.nama_customer.toLowerCase().trim())
+            );
+            if (matchedCust) {
+              resolvedCmd = matchedCust.cmd;
+            }
+          }
+          if (!resolvedCmd) resolvedCmd = defaultCmd;
+
           await localDb.saveUnit({
             no_equipment: eq,
             license_plate: plate,
@@ -732,11 +758,11 @@ export const MasterData: React.FC = () => {
             tipe_unit: d.tipe_unit || '',
             pendingin: d.pendingin || 'No',
             power: d.power || '',
-            tahun_unit: Number(d.tahun_unit) || 2022,
+            tahun_unit: Number(d.tahun_unit) || new Date().getFullYear(),
             chassis_no: d.chassis_no || '-',
             engine_serial_no: d.engine_serial_no || '-',
             warna: d.warna || 'Putih',
-            cmd: d.cmd || defaultCmd
+            cmd: resolvedCmd
           }, currentUser);
         } else if (activeSubTab === 'branches') {
           const plant = d.maint_plant || d.cabang || `PLANT-${index + 1}`;
