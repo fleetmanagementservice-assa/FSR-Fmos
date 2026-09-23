@@ -415,4 +415,15 @@ INSERT INTO operation_users (id, nama, username, password_hash, role_operation, 
 INSERT INTO units (id, no_equipment, license_plate, warna_nopol, description, kelompok_unit, kategori_unit, kelompok_tipe, tipe_unit, pendingin, power, tahun_unit, chassis_no, engine_serial_no, warna, cmd, customer) VALUES
 ('u1-uuid', '17000000', 'B-9368-URO', 'Hitam', 'DAIHATSU GRAN MAX BLIND VAN AC 1.3 M/T', 'Commercial Car', 'Blind Van', 'Gran Max', 'Gran Max', 'Dry', 'Fuel', 2022, 'MHKB3BA1JNK081395', 'K3MJ11440', 'PUTIH', '3000170', 'PT ADI SARANA TRANSPORTASI'),
 ('u2-uuid', '17000001', 'B-9364-SYQ', 'Kuning', 'DAIHATSU GRAN MAX BLIND VAN AC 1.3 M/T', 'Commercial Car', 'Blind Van', 'Gran Max', 'Gran Max', 'Dry', 'Fuel', 2022, 'MHKB3BA1JNK082218', 'K3MJ13009', 'PUTIH', '3000170', 'PT ADI SARANA TRANSPORTASI');
+
+-- ====================================================================
+-- 8. AKTIFKAN REPLIKASI SUPABASE REALTIME UNTUK NOTIFIKASI & UPDATE STATUS FSR
+-- ====================================================================
+begin;
+  -- Hapus publikasi jika sudah ada untuk menghindari redundansi
+  alter publication supabase_realtime disable;
+  alter publication supabase_realtime add table notifications;
+  alter publication supabase_realtime add table fsr;
+  alter publication supabase_realtime enable;
+commit;
 `;

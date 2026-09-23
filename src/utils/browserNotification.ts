@@ -39,6 +39,28 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   }
 }
 
+let globalAudioContext: AudioContext | null = null;
+const recentNotifications = new Set<string>();
+
+/**
+ * Warm up AudioContext from a user interaction event to unlock sounds on mobile Safari / Chrome
+ */
+export function warmupAudioContext(): void {
+  if (globalAudioContext) return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioContextClass) {
+      globalAudioContext = new AudioContextClass();
+      if (globalAudioContext.state === 'suspended') {
+        globalAudioContext.resume().catch(() => {});
+      }
+      console.log('[FMOS] Audio Context warmed up successfully for mobile alerts.');
+    }
+  } catch (err) {
+    console.debug('[BrowserNotification] Audio warmup skipped:', err);
+  }
+}
+
 /**
  * Synthesizes a clean, pleasant notification chime using Web Audio API
  */
@@ -47,7 +69,8 @@ export function playNotificationChime(): void {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) return;
 
-    const ctx = new AudioContextClass();
+    // Use already warmed up context if available to guarantee audio on iOS/mobile
+    const ctx = globalAudioContext || new AudioContextClass();
     if (ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
     }
@@ -103,6 +126,17 @@ export function sendBrowserNotification(
 
   // Prepend branding to title to make it explicit
   const formattedTitle = `FSR Fmos Web: ${title}`;
+
+  // Deduplication check to prevent duplicate toast/double chime in quick succession (within 15 seconds)
+  const notifTag = options.tag || `tag-${title}-${body}`;
+  if (recentNotifications.has(notifTag)) {
+    console.debug('[BrowserNotification] Blocked duplicate notification:', notifTag);
+    return null;
+  }
+  recentNotifications.add(notifTag);
+  setTimeout(() => {
+    recentNotifications.delete(notifTag);
+  }, 15000);
 
   // Play audible alert
   if (playSound) {

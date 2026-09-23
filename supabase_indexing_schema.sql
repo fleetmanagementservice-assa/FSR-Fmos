@@ -44,3 +44,12 @@ WHERE estimasi_vendor_url LIKE 'data:%';
 -- Reindex & Analyze untuk mengklaim kembali statistik & performa tabel di Supabase (Aman dalam transaksi)
 REINDEX TABLE fsr;
 ANALYZE fsr;
+
+-- 3. AKTIFKAN REPLIKASI SUPABASE REALTIME UNTUK NOTIFIKASI & UPDATE STATUS FSR
+begin;
+  alter publication supabase_realtime disable;
+  alter publication supabase_realtime add table notifications;
+  alter publication supabase_realtime add table fsr;
+  alter publication supabase_realtime enable;
+commit;
+

@@ -15,7 +15,7 @@ import { MasterData } from './components/MasterData';
 import { Login } from './components/Login';
 import { supabase, pullSupabaseToLocal, pushLocalToSupabase } from './db/supabaseClient';
 import { isMenuAllowed, getStartTabForUser } from './utils/permissions';
-import { initRealtimeNotificationListener, requestNotificationPermission } from './utils/browserNotification';
+import { initRealtimeNotificationListener, requestNotificationPermission, warmupAudioContext } from './utils/browserNotification';
 
 function AppContent() {
   const { isLoggedIn, currentUser } = useTheme();
@@ -24,6 +24,21 @@ function AppContent() {
   const [isSyncing, setIsSyncing] = React.useState(true);
   const [syncError, setSyncError] = React.useState<string | null>(null);
   const [activeToast, setActiveToast] = React.useState<{ title: string; body: string; fsrId?: string } | null>(null);
+
+  // Warm up AudioContext on first click/tap to unlock mobile/Safari audio autoplay
+  React.useEffect(() => {
+    const handleGesture = () => {
+      warmupAudioContext();
+      document.removeEventListener('click', handleGesture);
+      document.removeEventListener('touchstart', handleGesture);
+    };
+    document.addEventListener('click', handleGesture);
+    document.addEventListener('touchstart', handleGesture);
+    return () => {
+      document.removeEventListener('click', handleGesture);
+      document.removeEventListener('touchstart', handleGesture);
+    };
+  }, []);
 
   // Set up realtime browser notifications subscription
   React.useEffect(() => {
