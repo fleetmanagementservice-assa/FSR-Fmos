@@ -1,0 +1,6 @@
+{
+  "name": "FSR Management System",
+  "description": "An Enterprise-grade Fleet Service Request (FSR) Management System for managing approvals, maintenance, body repair, and document workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

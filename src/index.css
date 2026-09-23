@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-brand-50: #f0f6ff;
+  --color-brand-100: #e0ebff;
+  --color-brand-500: #0056d2; /* Professional Enterprise/Fiori Blue */
+  --color-brand-600: #0045ab;
+  --color-brand-700: #003585;
+}
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
+    position: fixed;
+    user-select: none; /* Prevents text selection on tapping */
+  }
+
+  body {
+    background-color: #f8fafc; /* Professional light gray */
+    color: #0f172a;
+    font-family: var(--font-sans);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Custom thin & clean touch-friendly scrollbars */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+  
+  /* Hide scrollbar classes */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Touch feedback effect */
+.active-press {
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+}
+.active-press:active {
+  transform: scale(0.96) !important;
+  opacity: 0.85;
+}
+
+/* Native-feel app bar safe areas */
+.safe-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
