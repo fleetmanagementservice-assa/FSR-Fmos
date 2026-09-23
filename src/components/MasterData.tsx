@@ -83,6 +83,9 @@ const mapHeaderKey = (h: string): string => {
   if (norm === 'role_operation' || norm === 'role' || norm === 'roleoperation' || norm === 'hak_akses') return 'role_operation';
   if (norm === 'cabang_handling' || norm === 'cabang' || norm === 'cabanghandling' || norm === 'branch' || norm === 'branch_handling' || norm === 'lokasi') return 'cabang_handling';
   if (norm === 'status' || norm === 'aktif' || norm === 'state' || norm === 'user_status') return 'status';
+  if (norm === 'assigned_customer_cmd' || norm === 'assignedcustomercmd' || norm === 'assigned_customer' || norm === 'assignedcustomer' || norm === 'customer_cmd' || norm === 'customercmd' || norm === 'assigned_cmd') return 'assigned_customer_cmd';
+  if (norm === 'assigned_vmd' || norm === 'assignedvmd' || norm === 'assigned_vmd_code' || norm === 'assignedvmdcode') return 'assigned_vmd';
+  if (norm === 'vendor_name' || norm === 'vendorname' || norm === 'assigned_vendor_name' || norm === 'assignedvendorname') return 'vendor_name';
   
   return norm;
 };
@@ -560,10 +563,12 @@ export const MasterData: React.FC = () => {
       ];
       filename = 'template_layanan.xlsx';
     } else if (activeSubTab === 'users') {
-      headers = ['nama', 'username', 'password', 'role_operation', 'cabang_handling', 'status'];
+      headers = ['nama', 'username', 'password', 'role_operation', 'cabang_handling', 'status', 'assigned_customer_cmd', 'assigned_vmd', 'vendor_name'];
       samples = [
-        ['Andi Wijaya', 'andi_sa', 'pass123', 'SA', 'DKI Jakarta', 'Active'],
-        ['Budi Prasetyo', 'budi_ss', 'pass123', 'SS', 'All Branches', 'Active']
+        ['Andi Wijaya', 'andi_sa', 'pass123', 'SA', 'DKI Jakarta', 'Active', '', '', ''],
+        ['Budi Prasetyo', 'budi_ss', 'pass123', 'SS', 'All Branches', 'Active', '', '', ''],
+        ['Ahmad Vendor', 'ahmad_vendor', 'pass123', 'Vendor', 'DKI Jakarta', 'Active', '', 'VMD002', 'CV Body Repair Lestari'],
+        ['Hendra Cust', 'hendra_cust', 'pass123', 'Admin Customer', 'All Branches', 'Active', 'CMD001', '', '']
       ];
       filename = 'template_user.xlsx';
     }
@@ -798,6 +803,9 @@ export const MasterData: React.FC = () => {
             password: d.password || 'password123',
             role_operation: (d.role_operation || 'SA') as UserRole,
             cabang_handling: d.cabang_handling || 'All',
+            assigned_customer_cmd: d.assigned_customer_cmd || '',
+            assigned_vmd: d.assigned_vmd || '',
+            vendor_name: d.vendor_name || '',
             status: (d.status || 'Active') as 'Active' | 'Inactive'
           }, currentUser);
         }
