@@ -101,6 +101,9 @@ export function sendBrowserNotification(
 ): Notification | null {
   const { body = '', fsrId, playSound = true } = options;
 
+  // Prepend branding to title to make it explicit
+  const formattedTitle = `FSR Fmos Web: ${title}`;
+
   // Play audible alert
   if (playSound) {
     playNotificationChime();
@@ -109,7 +112,7 @@ export function sendBrowserNotification(
   // Trigger custom in-app banner event
   window.dispatchEvent(
     new CustomEvent('in_app_notification_toast', {
-      detail: { title, body, fsrId, timestamp: new Date().toISOString() }
+      detail: { title: formattedTitle, body, fsrId, timestamp: new Date().toISOString() }
     })
   );
 
@@ -126,7 +129,7 @@ export function sendBrowserNotification(
       data: { fsrId }
     };
 
-    const notification = new Notification(title, notifOptions);
+    const notification = new Notification(formattedTitle, notifOptions);
 
     notification.onclick = (event) => {
       event.preventDefault();
