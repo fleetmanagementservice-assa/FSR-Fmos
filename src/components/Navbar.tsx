@@ -18,7 +18,7 @@ import {
 import { useTheme } from './ThemeContext';
 import { localDb } from '../db/localDb';
 import { Notification, UserRole } from '../types';
-import { getNotificationPermissionStatus, requestNotificationPermission } from '../utils/browserNotification';
+import { getNotificationPermissionStatus, requestNotificationPermission, sendBrowserNotification } from '../utils/browserNotification';
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -202,24 +202,44 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick, title }) => {
                   )}
                 </div>
                 {/* Desktop Alert Request Block */}
-                <div className="bg-slate-50 dark:bg-slate-900 px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs">
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Notifikasi Desktop
-                  </span>
-                  <button
-                    onClick={async () => {
-                      const res = await requestNotificationPermission();
-                      if (res === 'granted') {
-                        alert('Notifikasi desktop real-time berhasil diaktifkan!');
-                      } else {
-                        alert('Notifikasi desktop diblokir atau tidak didukung di peramban ini.');
-                      }
-                    }}
-                    className="text-[10px] bg-brand-600 hover:bg-brand-700 text-white font-extrabold px-2.5 py-1 rounded-md transition-all active:scale-95"
-                  >
-                    {getNotificationPermissionStatus() === 'granted' ? 'Sudah Aktif 🔔' : 'Aktifkan 🔔'}
-                  </button>
+                <div className="bg-slate-50 dark:bg-slate-900 px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Notifikasi Desktop
+                    </span>
+                    <button
+                      onClick={async () => {
+                        const res = await requestNotificationPermission();
+                        if (res === 'granted') {
+                          alert('Notifikasi desktop real-time berhasil diaktifkan!');
+                        } else {
+                          alert('Notifikasi desktop diblokir atau tidak didukung di peramban ini.');
+                        }
+                      }}
+                      className="text-[10px] bg-brand-600 hover:bg-brand-700 text-white font-extrabold px-2.5 py-1 rounded-md transition-all active:scale-95"
+                    >
+                      {getNotificationPermissionStatus() === 'granted' ? 'Sudah Aktif 🔔' : 'Aktifkan 🔔'}
+                    </button>
+                  </div>
+                  
+                  {/* SIMULATED TEST TRIGGER */}
+                  <div className="flex items-center justify-between text-xs border-t border-gray-100 dark:border-gray-800/60 pt-2">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      Uji Fitur Suara & Toast
+                    </span>
+                    <button
+                      onClick={() => {
+                        sendBrowserNotification('Uji Coba Notifikasi FSR', {
+                          body: 'Suara chime dan in-app toast sistem ini bekerja dengan sukses 100%!',
+                          playSound: true
+                        });
+                      }}
+                      className="text-[10px] bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold px-2.5 py-1 rounded-md transition-all active:scale-95"
+                    >
+                      Simulasi Tes 🔊
+                    </button>
+                  </div>
                 </div>
               </div>
             </>
