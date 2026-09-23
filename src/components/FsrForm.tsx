@@ -264,12 +264,8 @@ export const FsrForm: React.FC<FsrFormProps> = ({ onSuccess }) => {
 
     try {
       if (categoryType === 'Document') {
-        // Pre-generate a shared FSR number so they all share the same FSR number
-        const existingFsrs = localDb.getFsrs(currentUser);
-        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '').slice(0, 6); // YYYYMM
-        const countThisMonth = existingFsrs.filter(f => f.tanggal_create.slice(0, 7) === new Date().toISOString().slice(0, 7)).length;
-        const serial = String(countThisMonth + 1).padStart(4, '0');
-        const sharedNoFsr = `FSR/${dateStr}/${serial}`;
+        // Pre-generate a shared FSR number using the unified /DOC/ prefix with absolute uniqueness
+        const sharedNoFsr = localDb.generateNextNoFsr('Document');
 
         // Create separate FSR records for each selected unit so that each license plate (nopol) has its own row in the DB/Supabase
         for (const unit of selectedDocumentUnits) {

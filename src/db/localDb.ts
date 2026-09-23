@@ -17,7 +17,8 @@ import {
   Notification,
   ActivityLog,
   UserRole,
-  EstimasiItem
+  EstimasiItem,
+  ServiceCategory
 } from '../types';
 
 import {
@@ -870,6 +871,30 @@ class LocalDB {
     }
   }
 
+  public generateNextNoFsr(category: ServiceCategory): string {
+    const fsrs = this.getList<Fsr>(KEYS.FSRS);
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '').slice(0, 6); // YYYYMM
+    
+    let code = 'MT';
+    if (category === 'Body Repair') code = 'BR';
+    if (category === 'Document') code = 'DOC';
+
+    const countThisMonth = fsrs.filter(f => 
+      f.tanggal_create && f.tanggal_create.slice(0, 7) === new Date().toISOString().slice(0, 7) &&
+      f.kategori_layanan === category
+    ).length;
+
+    let serialNum = countThisMonth + 1;
+    let candidate = `FSR/${code}/${dateStr}/${String(serialNum).padStart(4, '0')}`;
+    
+    while (fsrs.some(f => f.no_fsr === candidate)) {
+      serialNum += 1;
+      candidate = `FSR/${code}/${dateStr}/${String(serialNum).padStart(4, '0')}`;
+    }
+
+    return candidate;
+  }
+
   // Create FSR (initiated by Admin Customer)
   public async createFsr(fsrData: Partial<Fsr>, actor: OperationUser): Promise<Fsr> {
     const fsrs = this.getList<Fsr>(KEYS.FSRS);
@@ -878,10 +903,7 @@ class LocalDB {
     // Auto generate No FSR if not provided
     let autoNoFsr = fsrData.no_fsr;
     if (!autoNoFsr) {
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '').slice(0, 6); // YYYYMM
-      const countThisMonth = fsrs.filter(f => f.tanggal_create.slice(0, 7) === new Date().toISOString().slice(0, 7)).length;
-      const serial = String(countThisMonth + 1).padStart(4, '0');
-      autoNoFsr = `FSR/${dateStr}/${serial}`;
+      autoNoFsr = this.generateNextNoFsr(fsrData.kategori_layanan || 'Maintenance');
     }
 
     const created: Fsr = {
