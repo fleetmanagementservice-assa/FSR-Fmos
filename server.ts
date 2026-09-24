@@ -21,7 +21,7 @@ async function start() {
   if (fs.existsSync(distPath)) {
     // Serve production build static files
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.use((req, res) => {
       res.sendFile(path.resolve(distPath, 'index.html'));
     });
   } else {
