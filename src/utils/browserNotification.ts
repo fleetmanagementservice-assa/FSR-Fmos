@@ -234,8 +234,55 @@ export function isNotificationRelevantForUser(notif: FsrNotification, user: Oper
 }
 
 /**
- * Global Realtime Notification Subscriber
- * Subscribes to local events and Supabase Postgres changes to deliver real-time notifications
+ * Directly synchronizes any real-time remote change from Supabase into the local cache
+ */
+export function syncRealtimeRowToLocalStorage(table: string, eventType: string, newRow: any, oldRow?: any): void {
+  try {
+    let key = '';
+    if (table === 'fsr') key = 'fsr_mgt_fsrs';
+    else if (table === 'notifications') key = 'fsr_mgt_notifications';
+    else if (table === 'fsr_history') key = 'fsr_mgt_fsr_history';
+    else if (table === 'estimasi') key = 'fsr_mgt_estimasi';
+    else if (table === 'operation_users') key = 'fsr_mgt_users';
+    else if (table === 'units') key = 'fsr_mgt_units';
+    else return;
+
+    const raw = localStorage.getItem(key);
+    let list = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(list)) list = [];
+
+    const rowId = newRow?.id || oldRow?.id;
+    if (!rowId) return;
+
+    if (eventType === 'DELETE') {
+      list = list.filter((x: any) => x.id !== rowId);
+    } else {
+      const cleanRow = { ...newRow };
+      if (table === 'units' && newRow.customer) {
+        cleanRow.customer_name = newRow.customer;
+      }
+      if (table === 'operation_users') {
+        cleanRow.password = newRow.password_hash || newRow.password || 'password123';
+      }
+
+      const idx = list.findIndex((x: any) => x.id === rowId);
+      if (idx !== -1) {
+        list[idx] = { ...list[idx], ...cleanRow };
+      } else {
+        list.unshift(cleanRow);
+      }
+    }
+
+    localStorage.setItem(key, JSON.stringify(list));
+    console.log(`[FMOS Realtime Sync] Synchronized ${eventType} on table "${table}" into local cache.`);
+  } catch (err) {
+    console.error('[FMOS Realtime Sync] Error during realtime storage sync:', err);
+  }
+}
+
+/**
+ * Global Realtime Notification & Data Sync Subscriber
+ * Subscribes to local events and Supabase Postgres changes to deliver real-time data sync & alerts
  */
 export function initRealtimeNotificationListener(getCurrentUser: () => OperationUser | null): () => void {
   // 1. Listen for local notification events dispatched within the tab
@@ -264,44 +311,41 @@ export function initRealtimeNotificationListener(getCurrentUser: () => Operation
         .channel('public:fsr_and_notifications_alerts')
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'notifications' },
+          { event: '*', schema: 'public' },
           (payload: any) => {
-            const raw = payload.new;
-            const user = getCurrentUser();
-            if (!raw || !user) return;
+            const { table, eventType, new: newRow, old: oldRow } = payload;
+            if (!table || !eventType) return;
 
-            const notif: FsrNotification = {
-              id: raw.id,
-              user_role: raw.target_role || raw.user_role,
-              title: raw.title,
-              message: raw.message,
-              fsr_id: raw.fsr_id,
-              is_read: Boolean(raw.is_read),
-              created_at: raw.created_at || new Date().toISOString()
-            };
+            // Step A: Update local storage cache immediately with the real-time event row payload
+            syncRealtimeRowToLocalStorage(table, eventType, newRow, oldRow);
 
-            // Dispatch local update
+            // Step B: Dispatch the global reload signal to refresh active UI tables
             window.dispatchEvent(new CustomEvent('fsr_db_updated'));
 
-            if (isNotificationRelevantForUser(notif, user)) {
-              sendBrowserNotification(notif.title, {
-                body: notif.message,
-                fsrId: notif.fsr_id,
-                tag: `notif-${notif.id}`
-              });
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'fsr' },
-          (payload: any) => {
-            const updatedFsr = payload.new as Fsr;
+            // Step C: Execute notification alerts if relevant
             const user = getCurrentUser();
-            window.dispatchEvent(new CustomEvent('fsr_db_updated'));
+            if (!user) return;
 
-            if (updatedFsr && user) {
-              // Notify user if this FSR belongs to them or is in their workflow
+            if (table === 'notifications' && eventType === 'INSERT' && newRow) {
+              const notif: FsrNotification = {
+                id: newRow.id,
+                user_role: newRow.target_role || newRow.user_role,
+                title: newRow.title,
+                message: newRow.message,
+                fsr_id: newRow.fsr_id,
+                is_read: Boolean(newRow.is_read),
+                created_at: newRow.created_at || new Date().toISOString()
+              };
+
+              if (isNotificationRelevantForUser(notif, user)) {
+                sendBrowserNotification(notif.title, {
+                  body: notif.message,
+                  fsrId: notif.fsr_id,
+                  tag: `notif-${notif.id}`
+                });
+              }
+            } else if (table === 'fsr' && eventType === 'UPDATE' && newRow) {
+              const updatedFsr = newRow as Fsr;
               const isRelevant =
                 (user.role_operation === 'TS' && localDb.isTsMatchingUser(user, updatedFsr.nama_ts)) ||
                 (user.role_operation === 'Vendor' && localDb.isVendorMatchingFsr(user, updatedFsr)) ||
@@ -320,7 +364,7 @@ export function initRealtimeNotificationListener(getCurrentUser: () => Operation
         )
         .subscribe((status: string) => {
           if (status === 'SUBSCRIBED') {
-            console.log('[FMOS] Real-time notifications channel subscribed successfully');
+            console.log('[FMOS] Global Real-time synchronized channel subscribed successfully');
           }
         });
     } catch (err) {
