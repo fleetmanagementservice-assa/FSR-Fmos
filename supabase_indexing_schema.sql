@@ -46,14 +46,6 @@ REINDEX TABLE fsr;
 ANALYZE fsr;
 
 -- 3. AKTIFKAN REPLIKASI SUPABASE REALTIME UNTUK SELURUH TABEL UTAMA
-begin;
-  alter publication supabase_realtime disable;
-  alter publication supabase_realtime add table notifications;
-  alter publication supabase_realtime add table fsr;
-  alter publication supabase_realtime add table fsr_history;
-  alter publication supabase_realtime add table estimasi;
-  alter publication supabase_realtime add table units;
-  alter publication supabase_realtime add table operation_users;
-  alter publication supabase_realtime enable;
-commit;
+ALTER PUBLICATION supabase_realtime SET TABLE notifications, fsr, fsr_history, estimasi, units, operation_users;
+
 
