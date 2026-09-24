@@ -263,6 +263,18 @@ class LocalDB {
       console.warn('[Supabase Clear All Activity Logs Notice]', err);
     }
     try {
+      const rawQueue = localStorage.getItem('fsr_mgt_pending_queue');
+      if (rawQueue) {
+        const queue = JSON.parse(rawQueue);
+        if (Array.isArray(queue)) {
+          const filtered = queue.filter((item: any) => item.table !== 'activity_logs');
+          localStorage.setItem('fsr_mgt_pending_queue', JSON.stringify(filtered));
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to clear activity_logs from pending queue:', e);
+    }
+    try {
       window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'activity_logs', eventType: 'DELETE' } }));
     } catch (e) {}
   }

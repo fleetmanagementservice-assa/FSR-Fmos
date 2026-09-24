@@ -517,6 +517,16 @@ export function saveSyncQueue(queue: PendingSyncItem[]): void {
   localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
 }
 
+export function removeFromSyncQueue(table: string, id: string): void {
+  try {
+    const queue = getSyncQueue();
+    const filtered = queue.filter(item => !(item.table === table && (item.id === id || item.payload?.id === id)));
+    saveSyncQueue(filtered);
+  } catch (e) {
+    console.warn('Failed to remove from sync queue:', e);
+  }
+}
+
 export function addToSyncQueue(table: string, action: 'UPSERT' | 'DELETE', payload: any): void {
   const queue = getSyncQueue();
   const itemId = payload?.id || `${table}_${Date.now()}`;
@@ -772,6 +782,9 @@ export async function writeThroughToSupabase(table: string, data: any): Promise<
  * Hard delete a record from Supabase
  */
 export async function deleteFromSupabase(table: string, id: string): Promise<void> {
+  // Always cancel/remove any pending UPSERT action for this item from the local sync queue
+  removeFromSyncQueue(table, id);
+
   if (!isAutoSyncEnabled()) return;
 
   try {
