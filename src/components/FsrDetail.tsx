@@ -419,6 +419,25 @@ export const FsrDetail: React.FC<FsrDetailProps> = ({ fsrId, onClose, onWorkflow
         </div>
         <div className="flex items-center gap-2">
           <span className={getStatusBadge(fsr.status)}>{fsr.status}</span>
+          {(currentUser?.role_operation === 'Super Admin' ||
+            currentUser?.role_operation === 'Admin Customer' ||
+            currentUser?.role_operation === 'Leader Customer' ||
+            currentUser?.role_operation === 'Leader Operation') && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (window.confirm(`Hapus permanen FSR ${fsr.no_fsr}? Tindakan ini akan menghapus data dari aplikasi dan database Supabase.`)) {
+                  await localDb.deleteFsr(fsr.id, currentUser);
+                  onClose();
+                }
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+              title="Hapus FSR Ini"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Hapus</span>
+            </button>
+          )}
           <button
             onClick={onClose}
             className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"

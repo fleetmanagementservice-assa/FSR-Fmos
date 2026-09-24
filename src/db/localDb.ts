@@ -31,7 +31,7 @@ import {
   INITIAL_FSRS
 } from './seedData';
 
-import { writeThroughToSupabase, deleteFromSupabase, isAutoSyncEnabled, pullSupabaseToLocal, pushLocalToSupabase, processSyncQueue } from './supabaseClient';
+import { supabase, writeThroughToSupabase, deleteFromSupabase, isAutoSyncEnabled, pullSupabaseToLocal, pushLocalToSupabase, processSyncQueue } from './supabaseClient';
 
 
 // Local storage keys
@@ -301,6 +301,10 @@ class LocalDB {
       this.setList(KEYS.BRANCHES, list);
       this.addActivity('Delete Cabang', `Menghapus Cabang: ${item.cabang}`, actor);
       await deleteFromSupabase('branches', id);
+      if (item.maint_plant) {
+        try { await supabase.from('branches').delete().eq('maint_plant', item.maint_plant); } catch (e) {}
+      }
+      try { window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'branches', eventType: 'DELETE', id } })); } catch (e) {}
     }
   }
 
@@ -363,6 +367,10 @@ class LocalDB {
       this.setList(KEYS.CUSTOMERS, list);
       this.addActivity('Delete Customer', `Menghapus Customer: ${item.nama_customer}`, actor);
       await deleteFromSupabase('customers', id);
+      if (item.cmd) {
+        try { await supabase.from('customers').delete().eq('cmd', item.cmd); } catch (e) {}
+      }
+      try { window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'customers', eventType: 'DELETE', id } })); } catch (e) {}
     }
   }
 
@@ -425,6 +433,10 @@ class LocalDB {
       this.setList(KEYS.VENDORS, list);
       this.addActivity('Delete Vendor', `Menghapus Vendor: ${item.nama_vendor}`, actor);
       await deleteFromSupabase('vendors', id);
+      if (item.vmd) {
+        try { await supabase.from('vendors').delete().eq('vmd', item.vmd); } catch (e) {}
+      }
+      try { window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'vendors', eventType: 'DELETE', id } })); } catch (e) {}
     }
   }
 
@@ -494,6 +506,7 @@ class LocalDB {
       this.setList(KEYS.CATEGORIES, list);
       this.addActivity('Delete Kategori', `Menghapus Kategori: ${item.kategori_layanan} - ${item.jenis_layanan}`, actor);
       await deleteFromSupabase('categories', id);
+      try { window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'categories', eventType: 'DELETE', id } })); } catch (e) {}
     }
   }
 
@@ -580,6 +593,13 @@ class LocalDB {
       this.setList(KEYS.UNITS, list);
       this.addActivity('Delete Unit', `Menghapus Unit: ${item.license_plate}`, actor);
       await deleteFromSupabase('units', id);
+      if (item.no_equipment) {
+        try { await supabase.from('units').delete().eq('no_equipment', item.no_equipment); } catch (e) {}
+      }
+      if (item.license_plate) {
+        try { await supabase.from('units').delete().eq('license_plate', item.license_plate); } catch (e) {}
+      }
+      try { window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'units', eventType: 'DELETE', id } })); } catch (e) {}
     }
   }
 
@@ -664,6 +684,10 @@ class LocalDB {
       this.setList(KEYS.USERS, list);
       this.addActivity('Delete User Operasional', `Menghapus User: ${item.nama}`, actor);
       await deleteFromSupabase('operation_users', id);
+      if (item.username) {
+        try { await supabase.from('operation_users').delete().eq('username', item.username); } catch (e) {}
+      }
+      try { window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'operation_users', eventType: 'DELETE', id } })); } catch (e) {}
     }
   }
 
@@ -1144,7 +1168,38 @@ class LocalDB {
       list.splice(idx, 1);
       this.setList(KEYS.FSRS, list);
       this.addActivity('Delete FSR', `Menghapus FSR: ${item.no_fsr}`, actor);
+
+      // Clean related local records
+      const notifs = this.getList<Notification>(KEYS.NOTIFICATIONS).filter(n => n.fsr_id !== id);
+      this.setList(KEYS.NOTIFICATIONS, notifs);
+
+      const histories = this.getList<FsrHistory>(KEYS.FSR_HISTORY).filter(h => h.fsr_id !== id);
+      this.setList(KEYS.FSR_HISTORY, histories);
+
+      const estimasis = this.getList<EstimasiItem>(KEYS.ESTIMASI).filter(e => e.fsr_id !== id);
+      this.setList(KEYS.ESTIMASI, estimasis);
+
+      // Cascade delete relations in Supabase
+      try {
+        await supabase.from('notifications').delete().eq('fsr_id', id);
+        await supabase.from('estimasi').delete().eq('fsr_id', id);
+        await supabase.from('fsr_history').delete().eq('fsr_id', id);
+      } catch (e) {
+        console.warn('[Supabase Cascade Delete Notice]', e);
+      }
+
+      // Delete FSR record in Supabase
       await deleteFromSupabase('fsr', id);
+      if (item.no_fsr) {
+        try {
+          await supabase.from('fsr').delete().eq('no_fsr', item.no_fsr);
+        } catch (e) {}
+      }
+
+      // Notify local listeners
+      try {
+        window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'fsr', eventType: 'DELETE', id } }));
+      } catch (e) {}
     }
   }
 

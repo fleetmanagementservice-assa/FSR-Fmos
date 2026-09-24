@@ -877,37 +877,68 @@ export const FsrMonitoring: React.FC = () => {
             paginatedFsrs.map((item) => (
               <div
                 key={item.id}
-                onClick={() => setSelectedFsrId(item.id)}
-                className={`p-4 active-press border-b border-gray-100 dark:border-gray-800 transition-colors ${
+                className={`p-4 border-b border-gray-100 dark:border-gray-800 transition-colors ${
                   selectedFsrId === item.id ? 'bg-blue-50/20 dark:bg-blue-950/20' : ''
                 }`}
               >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-mono font-black text-xs text-brand-600 dark:text-brand-400">
-                    {item.no_fsr}
-                  </span>
-                  <span className={getStatusBadge(item.status)}>{item.status}</span>
-                </div>
-                
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400 dark:text-gray-500">Customer:</span>
-                    <span className="font-bold text-gray-800 dark:text-gray-200 truncate max-w-[180px]">{item.nama_customer}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400 dark:text-gray-500">Plat / Unit:</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">{item.no_polisi} - {item.type_kendaraan}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400 dark:text-gray-500">Layanan:</span>
-                    <span className="text-slate-600 dark:text-slate-400">{item.kategori_layanan} ({item.jenis_layanan})</span>
-                  </div>
-                  <div className="flex justify-between items-baseline pt-1">
-                    <span className="text-gray-400 dark:text-gray-500">Estimasi:</span>
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                      {item.estimasi_biaya ? `Rp ${item.estimasi_biaya.toLocaleString('id-ID')}` : '-'}
+                <div
+                  onClick={() => setSelectedFsrId(item.id)}
+                  className="cursor-pointer active:opacity-80 transition-opacity"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-mono font-black text-xs text-brand-600 dark:text-brand-400">
+                      {item.no_fsr}
                     </span>
+                    <span className={getStatusBadge(item.status)}>{item.status}</span>
                   </div>
+                  
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 dark:text-gray-500">Customer:</span>
+                      <span className="font-bold text-gray-800 dark:text-gray-200 truncate max-w-[180px]">{item.nama_customer}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 dark:text-gray-500">Plat / Unit:</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{item.no_polisi} - {item.type_kendaraan}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400 dark:text-gray-500">Layanan:</span>
+                      <span className="text-slate-600 dark:text-slate-400">{item.kategori_layanan} ({item.jenis_layanan})</span>
+                    </div>
+                    <div className="flex justify-between items-baseline pt-1">
+                      <span className="text-gray-400 dark:text-gray-500">Estimasi:</span>
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                        {item.estimasi_biaya ? `Rp ${item.estimasi_biaya.toLocaleString('id-ID')}` : '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Action Buttons */}
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFsrId(item.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 text-xs font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <Eye className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>Detail</span>
+                  </button>
+
+                  {(currentUser.role_operation === 'Super Admin' ||
+                    currentUser.role_operation === 'Admin Customer' ||
+                    currentUser.role_operation === 'Leader Customer' ||
+                    currentUser.role_operation === 'Leader Operation') && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(e, item.id)}
+                      className="flex items-center justify-center gap-1.5 py-1.5 px-3.5 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-900/40 active:scale-95 transition-all"
+                      title="Hapus FSR"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Hapus</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))
