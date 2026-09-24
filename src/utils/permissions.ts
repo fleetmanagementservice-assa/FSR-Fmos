@@ -5,7 +5,7 @@
 
 import { OperationUser } from '../types';
 
-export type MenuId = 'dashboard' | 'fsr-monitoring' | 'fsr-form' | 'master-data';
+export type MenuId = 'dashboard' | 'fsr-monitoring' | 'fsr-form' | 'master-data' | 'activity-logs';
 
 /**
  * Check whether a user with a given role and permission settings is allowed to access a menu tab
@@ -22,7 +22,8 @@ export function isMenuAllowed(menuId: MenuId | string, user: OperationUser | nul
   if (user.permissions?.allowedMenus) {
     if (menuId === 'dashboard' && user.permissions.allowedMenus.dashboard === false) return false;
     if (menuId === 'fsr-monitoring' && user.permissions.allowedMenus.fsrMonitoring === false) return false;
-    if (menuId === 'master-data' && user.permissions.allowedMenus.masterData === false) return false;
+    if (menuId === 'master-data' && user.permissions.allowedMenus.masterData === false && role !== 'Leader Operation') return false;
+    if (menuId === 'activity-logs' && user.permissions.allowedMenus.activityLogs === false && role !== 'Leader Operation') return false;
   }
 
   // 3. Strict Role-based access rules
@@ -40,7 +41,11 @@ export function isMenuAllowed(menuId: MenuId | string, user: OperationUser | nul
       return role === 'Admin Customer';
 
     case 'master-data':
-      // Master Data ERP is ONLY accessible to Leader Operation (Super Admin handled above)
+      // Master Data ERP is accessible to Leader Operation (Super Admin handled above)
+      return role === 'Leader Operation';
+
+    case 'activity-logs':
+      // Activity Logs is accessible to Leader Operation (Super Admin handled above)
       return role === 'Leader Operation';
 
     default:
@@ -57,5 +62,6 @@ export function getStartTabForUser(user: OperationUser | null | undefined): Menu
   if (isMenuAllowed('fsr-monitoring', user)) return 'fsr-monitoring';
   if (isMenuAllowed('fsr-form', user)) return 'fsr-form';
   if (isMenuAllowed('master-data', user)) return 'master-data';
+  if (isMenuAllowed('activity-logs', user)) return 'activity-logs';
   return 'dashboard';
 }

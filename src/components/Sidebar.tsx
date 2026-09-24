@@ -9,6 +9,7 @@ import {
   FileSearch,
   PlusCircle,
   Database,
+  Activity,
   Terminal,
   ShieldAlert,
   Menu,
@@ -35,7 +36,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
     { id: 'dashboard', label: 'Dashboard KPI', icon: LayoutDashboard },
     { id: 'fsr-monitoring', label: 'Monitoring FSR', icon: FileSearch },
     { id: 'fsr-form', label: 'Pengajuan FSR', icon: PlusCircle },
-    { id: 'master-data', label: 'Master Data ERP', icon: Database }
+    { id: 'master-data', label: 'Master Data ERP', icon: Database },
+    { id: 'activity-logs', label: 'Log Aktivitas', icon: Activity }
   ];
 
   const allowedItems = menuItems.filter(item => isMenuAllowed(item.id, currentUser));

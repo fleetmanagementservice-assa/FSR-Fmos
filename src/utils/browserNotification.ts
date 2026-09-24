@@ -249,6 +249,7 @@ export function syncRealtimeRowToLocalStorage(table: string, eventType: string, 
     else if (table === 'customers') key = 'fsr_mgt_customers';
     else if (table === 'vendors') key = 'fsr_mgt_vendors';
     else if (table === 'categories') key = 'fsr_mgt_categories';
+    else if (table === 'activity_logs') key = 'fsr_mgt_activity_logs';
     else return;
 
     const raw = localStorage.getItem(key);

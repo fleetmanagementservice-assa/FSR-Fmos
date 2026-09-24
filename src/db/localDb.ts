@@ -237,6 +237,36 @@ class LocalDB {
     return this.getList<ActivityLog>(KEYS.ACTIVITY_LOGS);
   }
 
+  public async deleteActivityLog(id: string, actor: OperationUser): Promise<void> {
+    const list = this.getList<ActivityLog>(KEYS.ACTIVITY_LOGS);
+    const item = list.find(l => l.id === id);
+    if (item) {
+      const updated = list.filter(l => l.id !== id);
+      this.setList(KEYS.ACTIVITY_LOGS, updated);
+      await deleteFromSupabase('activity_logs', id);
+      try {
+        await supabase.from('activity_logs').delete().eq('id', id);
+      } catch (err) {
+        console.warn('[Supabase Direct Delete Activity Log Notice]', err);
+      }
+      try {
+        window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'activity_logs', eventType: 'DELETE', id } }));
+      } catch (e) {}
+    }
+  }
+
+  public async clearActivityLogs(actor: OperationUser): Promise<void> {
+    this.setList(KEYS.ACTIVITY_LOGS, []);
+    try {
+      await supabase.from('activity_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (err) {
+      console.warn('[Supabase Clear All Activity Logs Notice]', err);
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table: 'activity_logs', eventType: 'DELETE' } }));
+    } catch (e) {}
+  }
+
   // Master Branches CRUD
   public getBranches(): Branch[] {
     return this.getList<Branch>(KEYS.BRANCHES).filter(b => !b.deleted_at);

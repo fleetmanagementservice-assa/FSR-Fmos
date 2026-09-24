@@ -95,6 +95,7 @@ export interface OperationUser extends AuditFields {
       dashboard: boolean;
       fsrMonitoring: boolean;
       masterData: boolean;
+      activityLogs?: boolean;
     };
     allowedActions: {
       create: boolean;

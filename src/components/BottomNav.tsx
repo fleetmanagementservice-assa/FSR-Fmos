@@ -9,6 +9,7 @@ import {
   FileSearch,
   PlusCircle,
   Database,
+  Activity,
   Terminal,
   LogOut
 } from 'lucide-react';
@@ -16,7 +17,7 @@ import { useTheme } from './ThemeContext';
 import { isMenuAllowed } from '../utils/permissions';
 
 interface BottomNavProps {
-  activeTab: 'dashboard' | 'fsr-form' | 'fsr-monitoring' | 'master-data';
+  activeTab: 'dashboard' | 'fsr-form' | 'fsr-monitoring' | 'master-data' | 'activity-logs';
   setActiveTab: (tab: any) => void;
 }
 
@@ -29,6 +30,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
     { id: 'fsr-monitoring', label: 'Monitoring', icon: FileSearch },
     { id: 'fsr-form', label: 'Pengajuan', icon: PlusCircle },
     { id: 'master-data', label: 'Master Data', icon: Database },
+    { id: 'activity-logs', label: 'Log', icon: Activity },
     { id: 'logout', label: 'Keluar', icon: LogOut }
   ];
 

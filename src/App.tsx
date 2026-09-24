@@ -12,6 +12,7 @@ import { Dashboard } from './components/Dashboard';
 import { FsrForm } from './components/FsrForm';
 import { FsrMonitoring } from './components/FsrMonitoring';
 import { MasterData } from './components/MasterData';
+import { ActivityLogs } from './components/ActivityLogs';
 import { Login } from './components/Login';
 import { supabase, pullSupabaseToLocal, pushLocalToSupabase } from './db/supabaseClient';
 import { isMenuAllowed, getStartTabForUser } from './utils/permissions';
@@ -19,7 +20,7 @@ import { initRealtimeNotificationListener, requestNotificationPermission, warmup
 
 function AppContent() {
   const { isLoggedIn, currentUser } = useTheme();
-  const [activeTab, setActiveTab] = React.useState<'dashboard' | 'fsr-form' | 'fsr-monitoring' | 'master-data'>('dashboard');
+  const [activeTab, setActiveTab] = React.useState<'dashboard' | 'fsr-form' | 'fsr-monitoring' | 'master-data' | 'activity-logs'>('dashboard');
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [isSyncing, setIsSyncing] = React.useState(true);
   const [syncError, setSyncError] = React.useState<string | null>(null);
@@ -155,6 +156,8 @@ function AppContent() {
         return 'Monitoring FSR & Workflow Stepper';
       case 'master-data':
         return 'Master Data Management Hub';
+      case 'activity-logs':
+        return 'Log Aktivitas Sistem & Audit Trail';
       default:
         return 'FMOS System';
     }
@@ -170,6 +173,8 @@ function AppContent() {
         return 'FSR Module / Live Monitoring';
       case 'master-data':
         return 'Admin / Master Tables';
+      case 'activity-logs':
+        return 'Sistem / Log Aktivitas';
       default:
         return 'Home';
     }
@@ -280,6 +285,7 @@ function AppContent() {
             {activeTab === 'fsr-form' && isMenuAllowed('fsr-form', currentUser) && <FsrForm onSuccess={() => setActiveTab('fsr-monitoring')} />}
             {activeTab === 'fsr-monitoring' && isMenuAllowed('fsr-monitoring', currentUser) && <FsrMonitoring />}
             {activeTab === 'master-data' && isMenuAllowed('master-data', currentUser) && <MasterData />}
+            {activeTab === 'activity-logs' && isMenuAllowed('activity-logs', currentUser) && <ActivityLogs />}
           </div>
 
         </main>

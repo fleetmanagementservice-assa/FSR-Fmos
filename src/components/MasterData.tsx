@@ -188,6 +188,7 @@ export const MasterData: React.FC = () => {
   const [userMenuDashboard, setUserMenuDashboard] = useState(true);
   const [userMenuFsr, setUserMenuFsr] = useState(true);
   const [userMenuMaster, setUserMenuMaster] = useState(true);
+  const [userMenuActivityLogs, setUserMenuActivityLogs] = useState(true);
   const [userActionCreate, setUserActionCreate] = useState(true);
   const [userActionEdit, setUserActionEdit] = useState(true);
   const [userActionDelete, setUserActionDelete] = useState(false);
@@ -227,6 +228,7 @@ export const MasterData: React.FC = () => {
     setUserMenuDashboard(true);
     setUserMenuFsr(true);
     setUserMenuMaster(true);
+    setUserMenuActivityLogs(true);
     setUserActionCreate(true);
     setUserActionEdit(true);
     setUserActionDelete(false);
@@ -350,7 +352,8 @@ export const MasterData: React.FC = () => {
           allowedMenus: {
             dashboard: userMenuDashboard,
             fsrMonitoring: userMenuFsr,
-            masterData: userMenuMaster
+            masterData: userMenuMaster,
+            activityLogs: userMenuActivityLogs
           },
           allowedActions: {
             create: userActionCreate,
@@ -431,6 +434,7 @@ export const MasterData: React.FC = () => {
       setUserMenuDashboard(u.permissions.allowedMenus.dashboard ?? true);
       setUserMenuFsr(u.permissions.allowedMenus.fsrMonitoring ?? true);
       setUserMenuMaster(u.permissions.allowedMenus.masterData ?? true);
+      setUserMenuActivityLogs(u.permissions.allowedMenus.activityLogs ?? true);
       setUserActionCreate(u.permissions.allowedActions.create ?? true);
       setUserActionEdit(u.permissions.allowedActions.edit ?? true);
       setUserActionDelete(u.permissions.allowedActions.delete ?? false);
@@ -439,6 +443,7 @@ export const MasterData: React.FC = () => {
       setUserMenuDashboard(true);
       setUserMenuFsr(true);
       setUserMenuMaster(true);
+      setUserMenuActivityLogs(true);
       setUserActionCreate(true);
       setUserActionEdit(true);
       setUserActionDelete(u.role_operation === 'Super Admin');
@@ -2273,6 +2278,10 @@ function doOptions(e) {
                       <label className="flex items-center gap-2.5 cursor-pointer">
                         <input type="checkbox" checked={userMenuMaster} onChange={e => setUserMenuMaster(e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
                         <span className="text-slate-700 dark:text-slate-300">Master Data & Konfigurasi Drive</span>
+                      </label>
+                      <label className="flex items-center gap-2.5 cursor-pointer">
+                        <input type="checkbox" checked={userMenuActivityLogs} onChange={e => setUserMenuActivityLogs(e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
+                        <span className="text-slate-700 dark:text-slate-300">Log Aktivitas (Audit Trail)</span>
                       </label>
                     </div>
                     <div className="space-y-2">
