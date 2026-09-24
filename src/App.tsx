@@ -100,14 +100,10 @@ function AppContent() {
           throw testError;
         }
 
-        // 2. Automatically push seeds if operation_users is empty
-        const { data: users, error: usersError } = await supabase.from('operation_users').select('id').limit(1);
-        if (!usersError && (!users || users.length === 0)) {
-          console.log('[FMOS] Supabase detected empty. Automatically seeding default data to Supabase...');
-          await pushLocalToSupabase();
-        }
+        // 2. Clear any stale offline queues that might re-upload deleted data
+        localStorage.removeItem('fsr_mgt_sync_queue');
 
-        // 3. Pull latest data from Supabase to local storage cache
+        // 3. Pull latest data from Supabase directly to update application state
         const pullRes = await pullSupabaseToLocal();
         if (!pullRes.success) {
           throw new Error(pullRes.message);

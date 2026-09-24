@@ -154,92 +154,27 @@ class LocalDB {
       localStorage.setItem(CLEAN_DB_FLAG, 'true');
     }
 
-    const existingBranches = localStorage.getItem(KEYS.BRANCHES);
-    if (existingBranches && (
-      existingBranches.includes('PL01') || 
-      existingBranches.includes('b1-uuid-branch-dki') || 
-      existingBranches.includes('DKI Jakarta') ||
-      existingBranches.includes('01540bf8-2b8e-49b2-9a64-2d334cbdfcb1')
-    )) {
-      localStorage.removeItem(KEYS.BRANCHES);
-      localStorage.removeItem(KEYS.CUSTOMERS);
-      localStorage.removeItem(KEYS.VENDORS);
-      localStorage.removeItem(KEYS.CATEGORIES);
-      localStorage.removeItem(KEYS.UNITS);
-      localStorage.removeItem(KEYS.USERS);
-      localStorage.removeItem(KEYS.FSRS);
-      localStorage.removeItem(KEYS.ESTIMASI);
-      localStorage.removeItem(KEYS.FSR_HISTORY);
-      localStorage.removeItem(KEYS.NOTIFICATIONS);
-    }
+    const defaultCollections = [
+      KEYS.BRANCHES,
+      KEYS.CUSTOMERS,
+      KEYS.VENDORS,
+      KEYS.CATEGORIES,
+      KEYS.UNITS,
+      KEYS.USERS,
+      KEYS.FSRS,
+      KEYS.FSR_HISTORY,
+      KEYS.APPROVAL_HISTORY,
+      KEYS.ESTIMASI,
+      KEYS.NOTIFICATIONS,
+      KEYS.ACTIVITY_LOGS
+    ];
 
-    if (!localStorage.getItem(KEYS.BRANCHES)) {
-      localStorage.setItem(KEYS.BRANCHES, JSON.stringify(DEFAULT_BRANCHES));
-    }
-    if (!localStorage.getItem(KEYS.CUSTOMERS)) {
-      localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(DEFAULT_CUSTOMERS));
-    }
-    if (!localStorage.getItem(KEYS.VENDORS)) {
-      localStorage.setItem(KEYS.VENDORS, JSON.stringify(DEFAULT_VENDORS));
-    }
-    
-    // Automatically upgrade categories if they are outdated (missing 'Emergency' or not containing 14 entries)
-    const existingCategories = localStorage.getItem(KEYS.CATEGORIES);
-    if (existingCategories) {
-      try {
-        const cats = JSON.parse(existingCategories);
-        if (!Array.isArray(cats) || cats.length < 14 || !existingCategories.includes('Emergency')) {
-          localStorage.removeItem(KEYS.CATEGORIES);
-        }
-      } catch (e) {
-        localStorage.removeItem(KEYS.CATEGORIES);
+    for (const key of defaultCollections) {
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, JSON.stringify([]));
       }
     }
 
-    if (!localStorage.getItem(KEYS.CATEGORIES)) {
-      localStorage.setItem(KEYS.CATEGORIES, JSON.stringify(DEFAULT_CATEGORIES));
-    }
-    if (!localStorage.getItem(KEYS.UNITS)) {
-      localStorage.setItem(KEYS.UNITS, JSON.stringify(DEFAULT_UNITS));
-    }
-    const existingUsers = localStorage.getItem(KEYS.USERS);
-    if (existingUsers) {
-      try {
-        const usersList: OperationUser[] = JSON.parse(existingUsers);
-        let updated = false;
-        for (const defaultUser of DEFAULT_USERS) {
-          if (!usersList.some(u => u.username === defaultUser.username)) {
-            usersList.push(defaultUser);
-            updated = true;
-          }
-        }
-        if (updated) {
-          localStorage.setItem(KEYS.USERS, JSON.stringify(usersList));
-        }
-      } catch (e) {
-        localStorage.setItem(KEYS.USERS, JSON.stringify(DEFAULT_USERS));
-      }
-    } else {
-      localStorage.setItem(KEYS.USERS, JSON.stringify(DEFAULT_USERS));
-    }
-    if (!localStorage.getItem(KEYS.FSRS)) {
-      localStorage.setItem(KEYS.FSRS, JSON.stringify(INITIAL_FSRS));
-    }
-    if (!localStorage.getItem(KEYS.FSR_HISTORY)) {
-      localStorage.setItem(KEYS.FSR_HISTORY, JSON.stringify([]));
-    }
-    if (!localStorage.getItem(KEYS.APPROVAL_HISTORY)) {
-      localStorage.setItem(KEYS.APPROVAL_HISTORY, JSON.stringify([]));
-    }
-    if (!localStorage.getItem(KEYS.ESTIMASI)) {
-      localStorage.setItem(KEYS.ESTIMASI, JSON.stringify([]));
-    }
-    if (!localStorage.getItem(KEYS.NOTIFICATIONS)) {
-      localStorage.setItem(KEYS.NOTIFICATIONS, JSON.stringify([]));
-    }
-    if (!localStorage.getItem(KEYS.ACTIVITY_LOGS)) {
-      localStorage.setItem(KEYS.ACTIVITY_LOGS, JSON.stringify([]));
-    }
     if (!localStorage.getItem(KEYS.SESSION)) {
       // Default initial session is superadmin
       localStorage.setItem(KEYS.SESSION, JSON.stringify(DEFAULT_USERS[0]));

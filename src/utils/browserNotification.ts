@@ -259,7 +259,14 @@ export function syncRealtimeRowToLocalStorage(table: string, eventType: string, 
     if (!rowId) return;
 
     if (eventType === 'DELETE') {
-      list = list.filter((x: any) => x.id !== rowId);
+      const targetId = oldRow?.id || newRow?.id;
+      list = list.filter((x: any) => {
+        if (targetId && x.id === targetId) return false;
+        if (table === 'fsr' && oldRow?.no_fsr && x.no_fsr === oldRow.no_fsr) return false;
+        if (table === 'units' && oldRow?.no_equipment && x.no_equipment === oldRow.no_equipment) return false;
+        if (table === 'operation_users' && oldRow?.username && x.username === oldRow.username) return false;
+        return true;
+      });
     } else {
       const cleanRow = { ...newRow };
       if (table === 'units' && newRow.customer) {

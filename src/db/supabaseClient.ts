@@ -385,83 +385,26 @@ async function fetchFullTable(tableName: string): Promise<any[]> {
   return allData;
 }
 
-function mergeLocalAndSupabase<T extends { id?: string }>(
-  key: string,
-  supabaseItems: T[],
-  matchFn: (supItem: T, locItem: T) => boolean,
-  tableName?: string
-): T[] {
-  // Supabase is the single source of truth.
-  // We ONLY preserve locally cached items if they are currently pending in the offline sync queue.
-  const syncQueue = getSyncQueue();
-  const pendingUpserts = tableName
-    ? syncQueue.filter(q => q.table === tableName && q.action === 'UPSERT')
-    : [];
-  const pendingDeleteIds = tableName
-    ? new Set(syncQueue.filter(q => q.table === tableName && q.action === 'DELETE').map(q => q.payload?.id))
-    : new Set<string>();
-
-  // Start with records from Supabase, minus any that are locally queued for deletion
-  const merged: T[] = supabaseItems.filter(s => !s.id || !pendingDeleteIds.has(s.id));
-
-  // Only keep local items that are actively queued for offline insertion
-  if (pendingUpserts.length > 0) {
-    for (const pending of pendingUpserts) {
-      if (!pending.payload) continue;
-      const exists = merged.some(s => matchFn(s, pending.payload));
-      if (!exists) {
-        merged.push(pending.payload);
-      }
-    }
-  }
-
-  return merged;
-}
-
 /**
- * Pull all database records from Supabase and merge them with local storage
+ * Pull all database records from Supabase directly to local cache
  */
 export async function pullSupabaseToLocal(): Promise<{ success: boolean; message: string }> {
   try {
     // 1. Pull branches
     const branches = await fetchFullTable('branches');
-    const mergedBranches = mergeLocalAndSupabase(
-      'fsr_mgt_branches',
-      branches,
-      (s, l) => s.id === l.id || (s as any).maint_plant === (l as any).maint_plant,
-      'branches'
-    );
-    localStorage.setItem('fsr_mgt_branches', JSON.stringify(mergedBranches));
+    localStorage.setItem('fsr_mgt_branches', JSON.stringify(branches));
 
     // 2. Pull customers
     const customers = await fetchFullTable('customers');
-    const mergedCustomers = mergeLocalAndSupabase(
-      'fsr_mgt_customers',
-      customers,
-      (s, l) => s.id === l.id || (s as any).cmd === (l as any).cmd,
-      'customers'
-    );
-    localStorage.setItem('fsr_mgt_customers', JSON.stringify(mergedCustomers));
+    localStorage.setItem('fsr_mgt_customers', JSON.stringify(customers));
 
     // 3. Pull vendors
     const vendors = await fetchFullTable('vendors');
-    const mergedVendors = mergeLocalAndSupabase(
-      'fsr_mgt_vendors',
-      vendors,
-      (s, l) => s.id === l.id || (s as any).vmd === (l as any).vmd,
-      'vendors'
-    );
-    localStorage.setItem('fsr_mgt_vendors', JSON.stringify(mergedVendors));
+    localStorage.setItem('fsr_mgt_vendors', JSON.stringify(vendors));
 
     // 4. Pull categories
     const categories = await fetchFullTable('categories');
-    const mergedCategories = mergeLocalAndSupabase(
-      'fsr_mgt_categories',
-      categories,
-      (s, l) => s.id === l.id,
-      'categories'
-    );
-    localStorage.setItem('fsr_mgt_categories', JSON.stringify(mergedCategories));
+    localStorage.setItem('fsr_mgt_categories', JSON.stringify(categories));
 
     // 5. Pull operation users
     const users = await fetchFullTable('operation_users');
@@ -483,13 +426,7 @@ export async function pullSupabaseToLocal(): Promise<{ success: boolean; message
       deleted_at: u.deleted_at,
       deleted_by: u.deleted_by
     }));
-    const mergedUsers = mergeLocalAndSupabase(
-      'fsr_mgt_users',
-      mappedUsers,
-      (s, l) => s.id === l.id || (s.username || '').toLowerCase() === (l.username || '').toLowerCase(),
-      'operation_users'
-    );
-    localStorage.setItem('fsr_mgt_users', JSON.stringify(mergedUsers));
+    localStorage.setItem('fsr_mgt_users', JSON.stringify(mappedUsers));
 
     // 6. Pull units
     const units = await fetchFullTable('units');
@@ -518,65 +455,35 @@ export async function pullSupabaseToLocal(): Promise<{ success: boolean; message
       deleted_at: u.deleted_at,
       deleted_by: u.deleted_by
     }));
-    const mergedUnits = mergeLocalAndSupabase(
-      'fsr_mgt_units',
-      mappedUnits,
-      (s, l) => s.id === l.id || (s.no_equipment || '').toLowerCase() === (l.no_equipment || '').toLowerCase(),
-      'units'
-    );
-    localStorage.setItem('fsr_mgt_units', JSON.stringify(mergedUnits));
+    localStorage.setItem('fsr_mgt_units', JSON.stringify(mappedUnits));
 
     // 7. Pull FSRs
     const fsrs = await fetchFullTable('fsr');
-    const mergedFsrs = mergeLocalAndSupabase(
-      'fsr_mgt_fsrs',
-      fsrs,
-      (s, l) => s.id === l.id || (s as any).no_fsr === (l as any).no_fsr,
-      'fsr'
-    );
-    localStorage.setItem('fsr_mgt_fsrs', JSON.stringify(mergedFsrs));
+    localStorage.setItem('fsr_mgt_fsrs', JSON.stringify(fsrs));
 
     // 8. Pull History Timeline
     const histories = await fetchFullTable('fsr_history');
-    const mergedHistories = mergeLocalAndSupabase(
-      'fsr_mgt_fsr_history',
-      histories,
-      (s, l) => s.id === l.id,
-      'fsr_history'
-    );
-    localStorage.setItem('fsr_mgt_fsr_history', JSON.stringify(mergedHistories));
+    localStorage.setItem('fsr_mgt_fsr_history', JSON.stringify(histories));
 
     // 9. Pull Estimasi
     const estimasi = await fetchFullTable('estimasi');
-    const mergedEstimasi = mergeLocalAndSupabase(
-      'fsr_mgt_estimasi',
-      estimasi,
-      (s, l) => s.id === l.id,
-      'estimasi'
-    );
-    localStorage.setItem('fsr_mgt_estimasi', JSON.stringify(mergedEstimasi));
+    localStorage.setItem('fsr_mgt_estimasi', JSON.stringify(estimasi));
 
     // 10. Pull Notifications
     const notifications = await fetchFullTable('notifications');
-    const mergedNotifications = mergeLocalAndSupabase(
-      'fsr_mgt_notifications',
-      notifications,
-      (s, l) => s.id === l.id,
-      'notifications'
-    );
-    localStorage.setItem('fsr_mgt_notifications', JSON.stringify(mergedNotifications));
+    localStorage.setItem('fsr_mgt_notifications', JSON.stringify(notifications));
 
     // 11. Pull Logs
     const logs = await fetchFullTable('activity_logs');
-    const mergedLogs = mergeLocalAndSupabase(
-      'fsr_mgt_activity_logs',
-      logs,
-      (s, l) => s.id === l.id,
-      'activity_logs'
-    );
-    localStorage.setItem('fsr_mgt_activity_logs', JSON.stringify(mergedLogs));
+    localStorage.setItem('fsr_mgt_activity_logs', JSON.stringify(logs));
 
-    return { success: true, message: 'Berhasil mengunduh dan menyelaraskan semua data dari Supabase!' };
+    try {
+      window.dispatchEvent(new CustomEvent('fsr_db_updated'));
+    } catch (e) {
+      // ignore
+    }
+
+    return { success: true, message: 'Berhasil menyinkronkan data langsung dari Supabase!' };
   } catch (err: any) {
     console.error('Pull from Supabase failed:', err);
     return { success: false, message: err.message || 'Gagal mengunduh data dari Supabase.' };
