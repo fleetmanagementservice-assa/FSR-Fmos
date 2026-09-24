@@ -245,6 +245,10 @@ export function syncRealtimeRowToLocalStorage(table: string, eventType: string, 
     else if (table === 'estimasi') key = 'fsr_mgt_estimasi';
     else if (table === 'operation_users') key = 'fsr_mgt_users';
     else if (table === 'units') key = 'fsr_mgt_units';
+    else if (table === 'branches') key = 'fsr_mgt_branches';
+    else if (table === 'customers') key = 'fsr_mgt_customers';
+    else if (table === 'vendors') key = 'fsr_mgt_vendors';
+    else if (table === 'categories') key = 'fsr_mgt_categories';
     else return;
 
     const raw = localStorage.getItem(key);
@@ -275,6 +279,13 @@ export function syncRealtimeRowToLocalStorage(table: string, eventType: string, 
 
     localStorage.setItem(key, JSON.stringify(list));
     console.log(`[FMOS Realtime Sync] Synchronized ${eventType} on table "${table}" into local cache.`);
+
+    // Dispatch update event immediately so active views refresh instantly
+    try {
+      window.dispatchEvent(new CustomEvent('fsr_db_updated', { detail: { table, eventType, id: rowId } }));
+    } catch (e) {
+      // ignore
+    }
   } catch (err) {
     console.error('[FMOS Realtime Sync] Error during realtime storage sync:', err);
   }

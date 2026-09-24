@@ -419,5 +419,12 @@ INSERT INTO units (id, no_equipment, license_plate, warna_nopol, description, ke
 -- ====================================================================
 -- 8. AKTIFKAN REPLIKASI SUPABASE REALTIME UNTUK SELURUH TABEL UTAMA
 -- ====================================================================
+ALTER TABLE fsr REPLICA IDENTITY FULL;
+ALTER TABLE fsr_history REPLICA IDENTITY FULL;
+ALTER TABLE estimasi REPLICA IDENTITY FULL;
+ALTER TABLE units REPLICA IDENTITY FULL;
+ALTER TABLE operation_users REPLICA IDENTITY FULL;
+ALTER TABLE notifications REPLICA IDENTITY FULL;
+
 ALTER PUBLICATION supabase_realtime SET TABLE notifications, fsr, fsr_history, estimasi, units, operation_users;
 `;

@@ -245,10 +245,10 @@ class LocalDB {
       localStorage.setItem(KEYS.SESSION, JSON.stringify(DEFAULT_USERS[0]));
     }
 
-    // Background sync with Supabase on startup
+    // Background sync with Supabase on startup:
+    // Process any offline queued actions, then pull the latest source of truth from Supabase.
     if (isAutoSyncEnabled()) {
       processSyncQueue()
-        .then(() => pushLocalToSupabase())
         .then(() => pullSupabaseToLocal())
         .catch(err => {
           console.log('[Supabase Background Sync Notice]', err?.message || err);

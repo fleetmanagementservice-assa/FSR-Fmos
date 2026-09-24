@@ -391,25 +391,30 @@ function mergeLocalAndSupabase<T extends { id?: string }>(
   matchFn: (supItem: T, locItem: T) => boolean,
   tableName?: string
 ): T[] {
-  const merged = [...supabaseItems];
-  const localStr = localStorage.getItem(key);
-  if (localStr) {
-    try {
-      const localItems: T[] = JSON.parse(localStr);
-      for (const locItem of localItems) {
-        if (!locItem) continue;
-        const found = merged.some(s => matchFn(s, locItem));
-        if (!found) {
-          merged.push(locItem);
-          if (tableName) {
-            writeThroughToSupabase(tableName, locItem);
-          }
-        }
+  // Supabase is the single source of truth.
+  // We ONLY preserve locally cached items if they are currently pending in the offline sync queue.
+  const syncQueue = getSyncQueue();
+  const pendingUpserts = tableName
+    ? syncQueue.filter(q => q.table === tableName && q.action === 'UPSERT')
+    : [];
+  const pendingDeleteIds = tableName
+    ? new Set(syncQueue.filter(q => q.table === tableName && q.action === 'DELETE').map(q => q.payload?.id))
+    : new Set<string>();
+
+  // Start with records from Supabase, minus any that are locally queued for deletion
+  const merged: T[] = supabaseItems.filter(s => !s.id || !pendingDeleteIds.has(s.id));
+
+  // Only keep local items that are actively queued for offline insertion
+  if (pendingUpserts.length > 0) {
+    for (const pending of pendingUpserts) {
+      if (!pending.payload) continue;
+      const exists = merged.some(s => matchFn(s, pending.payload));
+      if (!exists) {
+        merged.push(pending.payload);
       }
-    } catch (e) {
-      console.warn(`Failed to parse local storage for key ${key}:`, e);
     }
   }
+
   return merged;
 }
 
