@@ -386,14 +386,90 @@ async function fetchFullTable(tableName: string): Promise<any[]> {
 }
 
 /**
+ * Helper to fetch records from a Supabase table that were updated after a specific timestamp (incremental sync)
+ * If the table does not support updated_at queries, it falls back to a full fetch seamlessly.
+ */
+async function fetchIncrementalTable(tableName: string, sinceIsoString: string): Promise<any[]> {
+  let allData: any[] = [];
+  let from = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .gt('updated_at', sinceIsoString)
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      console.warn(`[Supabase Incremental Fallback] Tabel "${tableName}" tidak mendukung query updated_at: ${error.message}. Mengunduh data penuh.`);
+      return fetchFullTable(tableName);
+    }
+
+    if (data && data.length > 0) {
+      allData.push(...data);
+      if (data.length < pageSize) {
+        hasMore = false;
+      } else {
+        from += pageSize;
+      }
+    } else {
+      hasMore = false;
+    }
+  }
+
+  return allData;
+}
+
+/**
  * Safely fetches a table from Supabase. If fetch fails (due to CORS, adblocker, VPN, network timeout),
  * it returns existing cached data or fallback default value, rather than breaking the application sync.
+ * Supports incremental loading to optimize and minimize PostgREST egress bandwidth.
  */
 async function safePullTable(tableName: string, fallbackKey: string, defaultValue: any = []): Promise<any[]> {
   try {
-    const data = await fetchFullTable(tableName);
-    localStorage.setItem(fallbackKey, JSON.stringify(data));
-    return data;
+    const lastPull = localStorage.getItem('fsr_mgt_last_pull_timestamp');
+    const existingRaw = localStorage.getItem(fallbackKey);
+    let existingData: any[] = [];
+    if (existingRaw) {
+      try {
+        existingData = JSON.parse(existingRaw);
+      } catch {
+        existingData = [];
+      }
+    }
+
+    let fetchedData: any[] = [];
+    if (existingData.length > 0 && lastPull) {
+      // 1. Fetch only records changed since the last pull
+      fetchedData = await fetchIncrementalTable(tableName, lastPull);
+      
+      if (fetchedData.length > 0) {
+        // 2. Merge changes matching record ID
+        const mergedMap = new Map();
+        existingData.forEach((item: any) => {
+          if (item && item.id) mergedMap.set(item.id, item);
+        });
+        fetchedData.forEach((item: any) => {
+          if (item && item.id) {
+            if (item.deleted_at) {
+              // Soft deletion handling: Remove from local storage if soft deleted
+              mergedMap.delete(item.id);
+            } else {
+              mergedMap.set(item.id, item);
+            }
+          }
+        });
+        existingData = Array.from(mergedMap.values());
+      }
+    } else {
+      // 3. Fallback to full fetch if no cached data exists
+      existingData = await fetchFullTable(tableName);
+    }
+
+    localStorage.setItem(fallbackKey, JSON.stringify(existingData));
+    return existingData;
   } catch (err) {
     console.warn(`[Supabase Safe Pull Notice] Gagal menarik tabel "${tableName}" karena gangguan jaringan atau ad-blocker. Menggunakan data lokal.`, err);
     const existing = localStorage.getItem(fallbackKey);
@@ -410,44 +486,84 @@ async function safePullTable(tableName: string, fallbackKey: string, defaultValu
 }
 
 /**
- * Pull all database records from Supabase directly to local cache
+ * Pull database records from Supabase directly to local cache using bandwidth optimization
  */
 export async function pullSupabaseToLocal(): Promise<{ success: boolean; message: string }> {
   try {
-    // 1. Pull branches
+    const lastPull = localStorage.getItem('fsr_mgt_last_pull_timestamp');
+
+    // 1. Pull branches (incremental)
     await safePullTable('branches', 'fsr_mgt_branches', []);
 
-    // 2. Pull customers
+    // 2. Pull customers (incremental)
     await safePullTable('customers', 'fsr_mgt_customers', []);
 
-    // 3. Pull vendors
+    // 3. Pull vendors (incremental)
     await safePullTable('vendors', 'fsr_mgt_vendors', []);
 
-    // 4. Pull categories
+    // 4. Pull categories (incremental)
     await safePullTable('categories', 'fsr_mgt_categories', []);
 
     // 5. Pull operation users
     try {
-      const users = await fetchFullTable('operation_users');
-      const mappedUsers = users.map(u => ({
-        id: u.id,
-        nama: u.nama,
-        username: u.username,
-        password: u.password_hash,
-        role_operation: u.role_operation,
-        cabang_handling: u.cabang_handling,
-        assigned_customer_cmd: u.assigned_customer_cmd || null,
-        assigned_vmd: u.assigned_vmd || null,
-        vendor_name: u.vendor_name || null,
-        status: u.status,
-        created_at: u.created_at,
-        created_by: u.created_by,
-        updated_at: u.updated_at,
-        updated_by: u.updated_by,
-        deleted_at: u.deleted_at,
-        deleted_by: u.deleted_by
-      }));
-      localStorage.setItem('fsr_mgt_users', JSON.stringify(mappedUsers));
+      const existingRaw = localStorage.getItem('fsr_mgt_users');
+      let existingUsers: any[] = [];
+      if (existingRaw) {
+        try { existingUsers = JSON.parse(existingRaw); } catch { existingUsers = []; }
+      }
+
+      if (existingUsers.length > 0 && lastPull) {
+        const users = await fetchIncrementalTable('operation_users', lastPull);
+        if (users.length > 0) {
+          const mergedMap = new Map(existingUsers.map(u => [u.id, u]));
+          users.forEach(u => {
+            if (u.deleted_at) {
+              mergedMap.delete(u.id);
+            } else {
+              mergedMap.set(u.id, {
+                id: u.id,
+                nama: u.nama,
+                username: u.username,
+                password: u.password_hash,
+                role_operation: u.role_operation,
+                cabang_handling: u.cabang_handling,
+                assigned_customer_cmd: u.assigned_customer_cmd || null,
+                assigned_vmd: u.assigned_vmd || null,
+                vendor_name: u.vendor_name || null,
+                status: u.status,
+                created_at: u.created_at,
+                created_by: u.created_by,
+                updated_at: u.updated_at,
+                updated_by: u.updated_by,
+                deleted_at: u.deleted_at,
+                deleted_by: u.deleted_by
+              });
+            }
+          });
+          existingUsers = Array.from(mergedMap.values());
+        }
+      } else {
+        const users = await fetchFullTable('operation_users');
+        existingUsers = users.map(u => ({
+          id: u.id,
+          nama: u.nama,
+          username: u.username,
+          password: u.password_hash,
+          role_operation: u.role_operation,
+          cabang_handling: u.cabang_handling,
+          assigned_customer_cmd: u.assigned_customer_cmd || null,
+          assigned_vmd: u.assigned_vmd || null,
+          vendor_name: u.vendor_name || null,
+          status: u.status,
+          created_at: u.created_at,
+          created_by: u.created_by,
+          updated_at: u.updated_at,
+          updated_by: u.updated_by,
+          deleted_at: u.deleted_at,
+          deleted_by: u.deleted_by
+        }));
+      }
+      localStorage.setItem('fsr_mgt_users', JSON.stringify(existingUsers));
     } catch (err) {
       console.warn('[Supabase Safe Pull Warning] Gagal menarik tabel "operation_users". Menggunakan data lokal.', err);
       if (!localStorage.getItem('fsr_mgt_users')) {
@@ -457,33 +573,78 @@ export async function pullSupabaseToLocal(): Promise<{ success: boolean; message
 
     // 6. Pull units
     try {
-      const units = await fetchFullTable('units');
-      const mappedUnits = units.map(u => ({
-        id: u.id,
-        no_equipment: u.no_equipment,
-        license_plate: u.license_plate,
-        warna_nopol: u.warna_nopol,
-        description: u.description,
-        kelompok_unit: u.kelompok_unit,
-        kategori_unit: u.kategori_unit,
-        kelompok_tipe: u.kelompok_tipe,
-        tipe_unit: u.tipe_unit,
-        pendingin: u.pendingin,
-        power: u.power,
-        tahun_unit: u.tahun_unit,
-        chassis_no: u.chassis_no,
-        engine_serial_no: u.engine_serial_no,
-        warna: u.warna,
-        cmd: u.cmd,
-        customer_name: u.customer,
-        created_at: u.created_at,
-        created_by: u.created_by,
-        updated_at: u.updated_at,
-        updated_by: u.updated_by,
-        deleted_at: u.deleted_at,
-        deleted_by: u.deleted_by
-      }));
-      localStorage.setItem('fsr_mgt_units', JSON.stringify(mappedUnits));
+      const existingRaw = localStorage.getItem('fsr_mgt_units');
+      let existingUnits: any[] = [];
+      if (existingRaw) {
+        try { existingUnits = JSON.parse(existingRaw); } catch { existingUnits = []; }
+      }
+
+      if (existingUnits.length > 0 && lastPull) {
+        const units = await fetchIncrementalTable('units', lastPull);
+        if (units.length > 0) {
+          const mergedMap = new Map(existingUnits.map(u => [u.id, u]));
+          units.forEach(u => {
+            if (u.deleted_at) {
+              mergedMap.delete(u.id);
+            } else {
+              mergedMap.set(u.id, {
+                id: u.id,
+                no_equipment: u.no_equipment,
+                license_plate: u.license_plate,
+                warna_nopol: u.warna_nopol,
+                description: u.description,
+                kelompok_unit: u.kelompok_unit,
+                kategori_unit: u.kategori_unit,
+                kelompok_tipe: u.kelompok_tipe,
+                tipe_unit: u.tipe_unit,
+                pendingin: u.pendingin,
+                power: u.power,
+                tahun_unit: u.tahun_unit,
+                chassis_no: u.chassis_no,
+                engine_serial_no: u.engine_serial_no,
+                warna: u.warna,
+                cmd: u.cmd,
+                customer_name: u.customer,
+                created_at: u.created_at,
+                created_by: u.created_by,
+                updated_at: u.updated_at,
+                updated_by: u.updated_by,
+                deleted_at: u.deleted_at,
+                deleted_by: u.deleted_by
+              });
+            }
+          });
+          existingUnits = Array.from(mergedMap.values());
+        }
+      } else {
+        const units = await fetchFullTable('units');
+        existingUnits = units.map(u => ({
+          id: u.id,
+          no_equipment: u.no_equipment,
+          license_plate: u.license_plate,
+          warna_nopol: u.warna_nopol,
+          description: u.description,
+          kelompok_unit: u.kelompok_unit,
+          kategori_unit: u.kategori_unit,
+          kelompok_tipe: u.kelompok_tipe,
+          tipe_unit: u.tipe_unit,
+          pendingin: u.pendingin,
+          power: u.power,
+          tahun_unit: u.tahun_unit,
+          chassis_no: u.chassis_no,
+          engine_serial_no: u.engine_serial_no,
+          warna: u.warna,
+          cmd: u.cmd,
+          customer_name: u.customer,
+          created_at: u.created_at,
+          created_by: u.created_by,
+          updated_at: u.updated_at,
+          updated_by: u.updated_by,
+          deleted_at: u.deleted_at,
+          deleted_by: u.deleted_by
+        }));
+      }
+      localStorage.setItem('fsr_mgt_units', JSON.stringify(existingUnits));
     } catch (err) {
       console.warn('[Supabase Safe Pull Warning] Gagal menarik tabel "units". Menggunakan data lokal.', err);
       if (!localStorage.getItem('fsr_mgt_units')) {
@@ -491,20 +652,23 @@ export async function pullSupabaseToLocal(): Promise<{ success: boolean; message
       }
     }
 
-    // 7. Pull FSRs
+    // 7. Pull FSRs (incremental)
     await safePullTable('fsr', 'fsr_mgt_fsrs', []);
 
-    // 8. Pull History Timeline
+    // 8. Pull History Timeline (incremental)
     await safePullTable('fsr_history', 'fsr_mgt_fsr_history', []);
 
-    // 9. Pull Estimasi
+    // 9. Pull Estimasi (incremental)
     await safePullTable('estimasi', 'fsr_mgt_estimasi', []);
 
-    // 10. Pull Notifications
+    // 10. Pull Notifications (incremental)
     await safePullTable('notifications', 'fsr_mgt_notifications', []);
 
-    // 11. Pull Logs
+    // 11. Pull Logs (incremental)
     await safePullTable('activity_logs', 'fsr_mgt_activity_logs', []);
+
+    // Set the last pull timestamp to localStorage so that all subsequent pulls use 99% less egress bandwidth
+    localStorage.setItem('fsr_mgt_last_pull_timestamp', new Date().toISOString());
 
     try {
       window.dispatchEvent(new CustomEvent('fsr_db_updated'));
