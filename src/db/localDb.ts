@@ -232,7 +232,26 @@ class LocalDB {
     writeThroughToSupabase('activity_logs', newLog);
   }
 
-  public getActivityLogs(): ActivityLog[] {
+  public async getActivityLogs(): Promise<ActivityLog[]> {
+    if (!isAutoSyncEnabled()) {
+      return this.getList<ActivityLog>(KEYS.ACTIVITY_LOGS);
+    }
+    try {
+      const { data, error } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+      if (data) {
+        // Overwrite local storage cache with the pristine Supabase source of truth
+        localStorage.setItem(KEYS.ACTIVITY_LOGS, JSON.stringify(data));
+        return data;
+      }
+    } catch (e) {
+      console.warn('[Supabase Get Activity Logs Failed, falling back to local]', e);
+    }
     return this.getList<ActivityLog>(KEYS.ACTIVITY_LOGS);
   }
 

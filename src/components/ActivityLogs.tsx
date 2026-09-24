@@ -38,9 +38,13 @@ export const ActivityLogs: React.FC = () => {
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
 
   // Load logs from localDb
-  const loadLogs = () => {
-    const list = localDb.getActivityLogs();
-    setLogs(list);
+  const loadLogs = async () => {
+    try {
+      const list = await localDb.getActivityLogs();
+      setLogs(list);
+    } catch (e) {
+      console.error('Failed to load logs:', e);
+    }
   };
 
   useEffect(() => {
