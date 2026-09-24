@@ -214,7 +214,6 @@ class LocalDB {
 
   public setCurrentUser(user: OperationUser): void {
     localStorage.setItem(KEYS.SESSION, JSON.stringify(user));
-    this.addActivity('Login', `User ${user.nama} (${user.role_operation}) berhasil login ke sistem.`, user);
   }
 
   // Activity Logger
