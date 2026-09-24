@@ -228,20 +228,20 @@ class LocalDB {
       created_at: new Date().toISOString()
     };
     logs.unshift(newLog);
-    this.setList(KEYS.ACTIVITY_LOGS, logs.slice(0, 150)); // Keep last 150 logs
+    this.setList(KEYS.ACTIVITY_LOGS, logs.slice(0, 300)); // Keep last 300 logs
     writeThroughToSupabase('activity_logs', newLog);
   }
 
   public async getActivityLogs(): Promise<ActivityLog[]> {
     if (!isAutoSyncEnabled()) {
-      return this.getList<ActivityLog>(KEYS.ACTIVITY_LOGS);
+      return this.getList<ActivityLog>(KEYS.ACTIVITY_LOGS).slice(0, 300);
     }
     try {
       const { data, error } = await supabase
         .from('activity_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200);
+        .limit(300);
 
       if (error) throw error;
       if (data) {
