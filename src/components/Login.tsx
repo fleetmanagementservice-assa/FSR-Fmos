@@ -684,7 +684,7 @@ export const Login: React.FC = () => {
             onClick={() => handleQuickLogin('admin_astra')}
             className="flex flex-col items-start rounded-xl bg-white border border-slate-100 p-2 text-left hover:border-brand-500 transition-colors shadow-xs dark:bg-slate-950 dark:border-slate-800"
           >
-            <span className="text-[10px] font-bold text-slate-800 dark:text-white truncate w-full">Rini (Admin Astra)</span>
+            <span className="text-[10px] font-bold text-slate-800 dark:text-white truncate w-full">Rini (Admin ASTA)</span>
             <span className="text-[8px] font-medium text-slate-400 truncate w-full">username: admin_astra</span>
             <span className="text-[8px] font-semibold text-brand-600">Admin Customer</span>
           </button>
@@ -693,7 +693,7 @@ export const Login: React.FC = () => {
             onClick={() => handleQuickLogin('leader_astra')}
             className="flex flex-col items-start rounded-xl bg-white border border-slate-100 p-2 text-left hover:border-brand-500 transition-colors shadow-xs dark:bg-slate-950 dark:border-slate-800"
           >
-            <span className="text-[10px] font-bold text-slate-800 dark:text-white truncate w-full">Bambang (Leader AST)</span>
+            <span className="text-[10px] font-bold text-slate-800 dark:text-white truncate w-full">Bambang (Leader ASTA)</span>
             <span className="text-[8px] font-medium text-slate-400 truncate w-full">username: leader_astra</span>
             <span className="text-[8px] font-semibold text-brand-600">Leader Customer</span>
           </button>
@@ -720,7 +720,7 @@ export const Login: React.FC = () => {
             onClick={() => handleQuickLogin('vro_dki')}
             className="flex flex-col items-start rounded-xl bg-white border border-slate-100 p-2 text-left hover:border-brand-500 transition-colors shadow-xs dark:bg-slate-950 dark:border-slate-800"
           >
-            <span className="text-[10px] font-bold text-slate-800 dark:text-white truncate w-full">Viktor (VRO)</span>
+            <span className="text-[10px] font-bold text-slate-800 dark:text-white truncate w-full">Tata (VRO)</span>
             <span className="text-[8px] font-medium text-slate-400 truncate w-full">username: vro_dki</span>
             <span className="text-[8px] font-semibold text-brand-600">VRO</span>
           </button>
