@@ -28,6 +28,7 @@ import { localDb } from '../db/localDb';
 import { Fsr, FsrStatus, ServiceCategory } from '../types';
 import { useTheme } from './ThemeContext';
 import { FsrDetail } from './FsrDetail';
+import { GroupedFsrModal } from './GroupedFsrModal';
 
 export const FsrMonitoring: React.FC = () => {
   const { currentUser } = useTheme();
@@ -35,6 +36,7 @@ export const FsrMonitoring: React.FC = () => {
   const [fsrs, setFsrs] = useState<Fsr[]>([]);
   const [selectedFsrId, setSelectedFsrId] = useState<string | null>(null);
   const [fsrIdToDelete, setFsrIdToDelete] = useState<string | null>(null);
+  const [groupedNoFsr, setGroupedNoFsr] = useState<string | null>(null);
 
   // Search, Filter, Sort, Pagination States
   const [searchTerm, setSearchTerm] = useState('');
@@ -925,6 +927,18 @@ export const FsrMonitoring: React.FC = () => {
                     <span>Detail</span>
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setGroupedNoFsr(item.no_fsr);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+                  >
+                    <Printer className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>Form FSR</span>
+                  </button>
+
                   {(currentUser.role_operation === 'Super Admin' ||
                     currentUser.role_operation === 'Admin Customer' ||
                     currentUser.role_operation === 'Leader Customer' ||
@@ -1045,8 +1059,19 @@ export const FsrMonitoring: React.FC = () => {
                         <button
                           onClick={() => setSelectedFsrId(item.id)}
                           className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+                          title="Lihat Detail"
                         >
                           <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setGroupedNoFsr(item.no_fsr);
+                          }}
+                          className="rounded-md p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-700"
+                          title="Cetak / Lihat Form FSR Terkonsolidasi"
+                        >
+                          <Printer className="h-4 w-4" />
                         </button>
                         {(currentUser.role_operation === 'Super Admin' ||
                           currentUser.role_operation === 'Admin Customer' ||
@@ -1158,6 +1183,13 @@ export const FsrMonitoring: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {groupedNoFsr && (
+        <GroupedFsrModal
+          noFsr={groupedNoFsr}
+          onClose={() => setGroupedNoFsr(null)}
+        />
       )}
 
     </div>
